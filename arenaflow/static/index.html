@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Grenze+Gotisch&display=swap" rel="stylesheet">
+<title>ArenaFlow - FIFA World Cup 2026</title>
+<link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+<header class="top">
+    <div class="brand"><span class="dot"></span>ArenaFlow</div>
+    <nav class="tabs" aria-label="Primary">
+        <a href="/" class="active">Overview</a>
+        <a href="/fan">Fan Concierge</a>
+        <a href="/ops">Operations</a>
+    </nav>
+</header>
+
+<main class="wrap">
+    <h1>GenAI for the FIFA World Cup 2026</h1>
+    <p class="lead">
+        Two surfaces, one model. Fans get a multilingual concierge for venues, transit, and accessibility.
+        Staff get a real-time operations co-pilot. Both run on a small RAG layer over curated reference notes
+        and a live operations snapshot.
+    </p>
+
+    <div class="grid cols-3">
+        <div class="card">
+            <h3>For fans</h3>
+            <p>Ask in any of 9 supported languages. Get exact transit lines, gate info, accessibility features.</p>
+            <a href="/fan">Open the concierge &rarr;</a>
+        </div>
+        <div class="card">
+            <h3>For staff</h3>
+            <p>Live gate waits, transit load, weather and AQI - with an AI recommendation on the next move.</p>
+            <a href="/ops">Open the dashboard &rarr;</a>
+        </div>
+        <div class="card">
+            <h3>For organisers</h3>
+            <p>Free-water advisories, cooling-zone activation, and crowd re-balancing, grounded in venue data.</p>
+        </div>
+    </div>
+
+    <h2>What it covers</h2>
+    <div class="grid cols-2">
+        <div class="card">
+            <h3>Navigation & transport</h3>
+            <p>Per-venue nearest station, line, and step-free route to a sample seat.</p>
+        </div>
+        <div class="card">
+            <h3>Accessibility</h3>
+            <p>Sensory rooms, hearing loops, ASL-interpreted screens, audio description, service-animal relief.</p>
+        </div>
+        <div class="card">
+            <h3>Crowd management</h3>
+            <p>Gate-wait redirection, re-entry surge handling, weather and heat advisories.</p>
+        </div>
+        <div class="card">
+            <h3>Sustainability</h3>
+            <p>Refill stations, recycling, and which host cities bundle transit with the match ticket.</p>
+        </div>
+    </div>
+
+    <footer class="foot">No fan data is stored. All answers are generated per request.</footer>
+</main>
+</body>
+</html>

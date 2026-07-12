@@ -1,0 +1,13 @@
+# Pinned to versions with prebuilt manylinux/musllinux wheels (no Rust toolchain needed).
+# Compatible with Python 3.11 - 3.14. pydantic 2.13.x is the first line whose
+# bundled pydantic-core ships cp314 wheels; earlier 2.10/2.11/2.12 only go to cp313.
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+httpx==0.28.1
+pydantic==2.13.4
+python-dotenv==1.0.1
+
+# Test runner. The repo ships pytest.ini; tests are plain
+# unittest.TestCase so they run under both `pytest` and
+# `python -m unittest discover -s tests`.
+pytest>=8.0

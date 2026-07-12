@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Grenze+Gotisch&display=swap" rel="stylesheet">
+<title>Fan Concierge - ArenaFlow</title>
+<link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+<header class="top">
+    <div class="brand"><span class="dot"></span>ArenaFlow</div>
+    <nav class="tabs" aria-label="Primary">
+        <a href="/">Overview</a>
+        <a href="/fan" class="active">Fan Concierge</a>
+        <a href="/ops">Operations</a>
+    </nav>
+</header>
+
+<main class="wrap">
+    <h1>Fan Concierge</h1>
+    <p class="lead">Ask in any language. We answer with the exact venue, gate, or transit line.</p>
+
+    <div class="grid cols-2">
+        <div class="card">
+            <label for="city"><strong>Host city</strong></label>
+            <select id="city" aria-label="Filter by host city" required>
+                <option value="" disabled selected>Select host city</option>
+            </select>
+            <div class="suggest" role="group" aria-label="Quick suggestions">
+                <button data-q="How do I get to the stadium by transit?">Transit to stadium</button>
+                <button data-q="Where is the sensory room and is there a quiet space?">Sensory / quiet room</button>
+                <button data-q="Is there step-free access and where is the accessible drop-off?">Step-free access</button>
+                <button data-q="Are refill water stations free and where are the recycling bins?">Sustainability</button>
+                <button data-q="How early should I arrive before kickoff?">Arrive early?</button>
+                <button data-q="¿Dónde está la sala sensorial?">En español</button>
+                <button data-q="أين الغرفة الحسية؟">بالعربية</button>
+            </div>
+        </div>
+
+        <div class="card" aria-live="polite">
+            <h3>Status</h3>
+            <p id="status" class="lead">Ready.</p>
+            <p class="lead" id="lang-pill"></p>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+        <div class="chat" id="chat" aria-label="Concierge conversation">
+            <div class="scroll" id="scroll">
+                <div class="msg bot">
+                    <div class="bubble">
+                        Hi! I'm your ArenaFlow concierge. Ask me about transit, accessibility,
+                        gates, sustainability, or anything else for the FIFA World Cup 2026.
+                    </div>
+                </div>
+            </div>
+            <form class="composer" id="composer" autocomplete="off">
+                <label for="q" class="visually-hidden">Your question</label>
+                <input id="q" type="text" placeholder="Ask in any language..." required maxlength="800" />
+                <button id="send" type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/fan.js" defer></script>
+</body>
+</html>

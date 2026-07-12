@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Grenze+Gotisch&display=swap" rel="stylesheet">
+<title>Operations - ArenaFlow</title>
+<link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+<header class="top">
+    <div class="brand"><span class="dot"></span>ArenaFlow Ops</div>
+    <nav class="tabs" aria-label="Primary">
+        <a href="/">Overview</a>
+        <a href="/fan">Fan Concierge</a>
+        <a href="/ops" class="active">Operations</a>
+    </nav>
+</header>
+
+<main class="wrap">
+    <h1>Operations Dashboard</h1>
+    <p class="lead">Live snapshot per venue, with an AI co-pilot for the next move.</p>
+
+    <div class="card">
+        <div class="grid cols-3">
+            <div>
+                <label for="venue"><strong>Venue</strong></label>
+                <select id="venue" aria-label="Venue"></select>
+            </div>
+            <div>
+                <label for="minute"><strong>Minutes to kickoff</strong></label>
+                <input id="minute" type="text" inputmode="numeric" value="60" />
+            </div>
+            <div style="display:flex; align-items:flex-end;">
+                <button id="refresh" class="ghost">Refresh snapshot</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid cols-3" style="margin-top:16px;">
+        <div class="card kpi">
+            <div class="l">Inside</div>
+            <div class="v" id="kpi-inside">-</div>
+            <div class="l"><span id="kpi-pct">-</span>% of capacity</div>
+        </div>
+        <div class="card kpi">
+            <div class="l">Weather</div>
+            <div class="v" id="kpi-weather" style="font-size:1.8rem;">-</div>
+            <div class="l">Air: <span id="kpi-aq">-</span></div>
+        </div>
+        <div class="card kpi">
+            <div class="l">Busiest gate wait</div>
+            <div class="v" id="kpi-busiest">-</div>
+            <div class="l" id="kpi-busiest-gate">-</div>
+        </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:16px;">
+        <div class="card">
+            <h3>Gate waits</h3>
+            <table class="gates" id="gates">
+                <thead><tr><th>Gate</th><th>Status</th><th>Wait (min)</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Transit &amp; sustainability</h3>
+            <div id="transit"></div>
+            <h3 style="margin-top:14px;">Active alerts</h3>
+            <div id="alerts"></div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+        <h3>Ask the co-pilot</h3>
+        <div class="grid cols-2">
+            <div>
+                <textarea id="q" placeholder="e.g. Should I redirect fans from G3 to G5? What's the heat risk?"></textarea>
+                <div class="btn-row" style="margin-top:8px;">
+                    <button id="ask">Ask</button>
+                    <button class="ghost" data-q="What should we do in the next 10 minutes given current waits and weather?">Brief 10-min plan</button>
+                    <button class="ghost" data-q="Any accessibility, sustainability, or safety risks to flag right now?">Risk scan</button>
+                </div>
+            </div>
+            <div>
+                <div class="card" style="background:var(--muted);" aria-live="polite">
+                    <div id="answer" style="white-space:pre-wrap;">Ask a question and the co-pilot will reply here.</div>
+                    <p class="lead" id="meta" style="margin-top:10px;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/ops.js" defer></script>
+</body>
+</html>
