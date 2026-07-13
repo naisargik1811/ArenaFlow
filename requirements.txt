@@ -11,3 +11,4 @@ python-dotenv==1.0.1
 # unittest.TestCase so they run under both `pytest` and
 # `python -m unittest discover -s tests`.
 pytest>=8.0
+Mangum>=0.18.0  # ASGI adapter for AWS Lambda/Vercel
