@@ -12,3 +12,4 @@ python-dotenv==1.0.1
 # `python -m unittest discover -s tests`.
 pytest>=8.0
 Mangum>=0.18.0  # ASGI adapter for AWS Lambda/Vercel
+Mangum>=0.18.0  # ASGI adapter for AWS Lambda/Vercel
