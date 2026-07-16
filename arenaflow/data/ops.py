@@ -7,7 +7,9 @@ For evaluation we generate a small deterministic scenario per kickoff minute.
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
+import os
 import random
+import httpx
 
 
 @dataclass
@@ -83,6 +85,36 @@ SUSTAIN = {
 }
 
 
+# Live signal seam: when ARENAFLOW_LIVE_TRANSIT_URL points at a JSON map of
+# {venue: {line: status}}, operational intelligence reads a real feed instead of
+# the synthetic source. Any fetch/parse failure falls back to synthetic so the
+# ops view never goes dark (ponytail: opt-in; demo stays offline-first).
+
+
+def transit_status(venue_name: str) -> dict[str, str]:
+    """Transit load per line for a venue.
+
+    Returns the live feed when configured, otherwise the deterministic synthetic
+    source; falls back to synthetic on any transport/shape error.
+    """
+    url = os.getenv("ARENAFLOW_LIVE_TRANSIT_URL")
+    if not url:
+        return dict(TRANSIT.get(venue_name, {}))
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            r = client.get(url, headers={"Accept": "application/json"})
+            r.raise_for_status()
+            feed = r.json()
+        return dict(feed.get(venue_name, TRANSIT.get(venue_name, {})))
+    except (httpx.HTTPError, ValueError, KeyError):
+        return dict(TRANSIT.get(venue_name, {}))
+
+
+def sustainability_for(venue_name: str) -> dict[str, str]:
+    """Sustainability posture for a venue (recycling/compost, transit-included)."""
+    return dict(SUSTAIN.get(venue_name, {}))
+
+
 def _rng_for(venue: str, minute: int) -> random.Random:
     return random.Random(f"{venue}-{minute}")
 
@@ -127,10 +159,10 @@ def snapshot(venue: str, minute: int = 60) -> Snapshot:
         gates=gates,  # GateStatus nested; asdict serialises them
         inside=inside,
         capacity=capacity,
-        transit_load=TRANSIT.get(name, {}),
+        transit_load=transit_status(name),
         weather=WEATHER[minute % len(WEATHER)],
         air_quality=AQ[minute % len(AQ)],
-        sustainability=SUSTAIN.get(name, {}),
+        sustainability=sustainability_for(name),
         alerts=alerts,
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
     )

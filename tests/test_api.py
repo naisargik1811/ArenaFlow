@@ -50,6 +50,7 @@ class ApiTests(unittest.TestCase):
         out = asyncio.run(ops_ask(body, self.req))
         self.assertIn(out.source, ("nvidia", "offline"))
         self.assertIn("snapshot", out.model_dump())
+        self.assertIsInstance(out.language, str)
 
 
 

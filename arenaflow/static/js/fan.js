@@ -57,6 +57,7 @@
             const meta = `${data.source}${data.model ? ' (' + data.model + ')' : ''} - refs: ${data.used_ids.join(', ') || 'none'}`;
             addMsg('bot', data.text, meta);
             langPill.textContent = 'Detected language: ' + data.language;
+            if (data.language) document.documentElement.lang = data.language;
             status.textContent = 'Ready.';
         } catch (e) {
             addMsg('bot', 'Sorry, something went wrong. Please try again.');

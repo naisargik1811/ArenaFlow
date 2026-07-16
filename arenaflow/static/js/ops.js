@@ -15,6 +15,7 @@
     const gatesBody = document.querySelector('#gates tbody');
     const transit = document.getElementById('transit');
     const alerts = document.getElementById('alerts');
+    const langPill = document.getElementById('lang-pill');
 
     function pillFor(status) {
         const span = document.createElement('span');
@@ -130,6 +131,7 @@
             const data = await r.json();
             answer.textContent = data.text;
             meta.textContent = `${data.source}${data.model ? ' (' + data.model + ')' : ''} - refs: ${data.used_ids.join(', ') || 'none'}`;
+            if (data.language) document.documentElement.lang = data.language;
         } catch (e) {
             answer.textContent = 'Error: ' + e.message;
         } finally {

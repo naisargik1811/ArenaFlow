@@ -144,10 +144,12 @@ async def ops_reply(
     snapshot_json: str,
     api_key: str | None,
     model: str = DEFAULT_MODEL,
+    language: str = "en",
 ) -> Reply:
     used = [s.id for s in snippets]
     ctx = build_context(snippets)
     user = (
+        f"USER LANGUAGE: {language}\n\n"
         f"LIVE SNAPSHOT:\n{snapshot_json}\n\n"
         f"REFERENCE NOTES:\n{ctx}\n\n"
         f"STAFF QUESTION:\n{question}"
@@ -169,15 +171,18 @@ def _unaccent(text: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c))
 
 
+# Hint words per language; diacritics are folded at definition so accented
+# and unaccented queries both match (cómo == como, estadio == estádio).
 _LATIN_HINTS = {
-    "es": {"cómo", "llego", "estadio", "transporte", "dónde", "gracias", "hola", "público"},
-    "fr": {"comment", "stade", "transports", "où", "bonjour", "merci", "je"},
-    "de": {"wie", "stadion", "öffentlich", "wo", "hallo", "danke", "ich"},
-    "pt": {"como", "estádio", "transporte", "onde", "obrigado", "olá"},
-    "it": {"come", "stadio", "trasporto", "dove", "grazie", "ciao"},
+    lang: {_unaccent(h) for h in hints}
+    for lang, hints in {
+        "es": {"cómo", "llego", "estadio", "transporte", "dónde", "gracias", "hola", "público"},
+        "fr": {"comment", "stade", "transports", "où", "bonjour", "merci", "je"},
+        "de": {"wie", "stadion", "öffentlich", "wo", "hallo", "danke", "ich"},
+        "pt": {"como", "estádio", "transporte", "onde", "obrigado", "olá"},
+        "it": {"come", "stadio", "trasporto", "dove", "grazie", "ciao"},
+    }.items()
 }
-# Fold diacritics in the hints so accented/unaccented queries both match.
-_LATIN_HINTS = {lang: {_unaccent(h) for h in hints} for lang, hints in _LATIN_HINTS.items()}
 # ponytail: heuristic wordlist; wrong for short/ambiguous queries. Swap for a
 # tiny langid model only if detection drives more than the language pill.
 

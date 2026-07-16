@@ -106,6 +106,33 @@ leakage), snapshot invariants (inside ≤ capacity, deterministic, valid gate
 shape), language detection, offline fallback on every error mode, the live
 LLM path, injection/XSS payloads, and security headers on every route.
 
+## Challenge alignment (Smart Stadiums & Tournament Operations)
+
+ArenaFlow is a GenAI assistant for **FIFA World Cup 2026** fans, volunteers,
+and venue staff. It maps directly onto the brief's target outcomes:
+
+- **Navigation & transportation** — fans ask transit/gate questions; the
+  retriever grounds answers in per-venue snippets (nearest metro, drop-off,
+  gate locations) and the city-scoped fallback keeps answers venue-correct.
+- **Accessibility** — sensory rooms, hearing loops, step-free routes and
+  mobility guidance are first-class KB facts, surfaced to fans and to staff
+  co-pilot prompts.
+- **Multilingual assistance** — `detect_language` sets the reply language
+  (es/fr/de/pt/it/ja/ko/ar/ru + English); the Fan Concierge answers in the
+  fan's own language with no extra model call.
+- **Crowd management / operational intelligence** — the Operations Dashboard
+  shows live (deterministic) gate waits, transit load, weather and AQI, and
+  an AI co-pilot turns that snapshot into a "what next?" recommendation.
+- **Real-time decision support** — staff get a grounded, source-cited reply
+  from the same RAG layer fans use, so recommendations trace back to the
+  live snapshot and KB.
+- **Sustainability** — KB snippets carry transit and accessibility guidance
+  that shifts fans to public transport and reduces venue friction.
+- **Real signal, not just synthetic** — `transit_status()` in `data/ops.py` reads a live feed when `ARENAFLOW_LIVE_TRANSIT_URL` is set and falls back to the deterministic source on any error, so operational intelligence can ingest a real transit API without breaking the offline-first, demo-proof default.
+- **Robust by design** — offline-first fallback, validated model output, and
+  CSP/XSS-safe rendering mean the service stays useful and safe during a
+  match-day API outage or a malicious prompt.
+
 ## Assumptions
 
 - **One small model is enough.** Default `meta/llama-3.1-8b-instruct`;

@@ -58,6 +58,7 @@ async def ops_ask(body: OpsAsk, request: Request) -> OpsAnswer:
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     snippets = retriever.search(body.question, top_k=2, city=snap.city)
+    lang = detect_language(body.question)
     snap_dict = asdict(snap)
     reply = await ops_reply(
         body.question,
@@ -65,8 +66,9 @@ async def ops_ask(body: OpsAsk, request: Request) -> OpsAnswer:
         json.dumps(snap_dict),
         settings.nvidia_api_key,
         settings.nvidia_model,
+        lang,
     )
-    return OpsAnswer(**reply.model_dump(), snapshot=snap_dict)
+    return OpsAnswer(**reply.model_dump(), snapshot=snap_dict, language=lang)
 
 
 @router.get("/api/ops/snapshot")

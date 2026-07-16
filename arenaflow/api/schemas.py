@@ -41,3 +41,4 @@ class OpsAsk(BaseModel):
 
 class OpsAnswer(Reply):
     snapshot: dict
+    language: str
