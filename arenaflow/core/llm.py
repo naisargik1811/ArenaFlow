@@ -9,13 +9,15 @@ Same shape in both cases - the caller doesn't need to branch.
 from __future__ import annotations
 import json
 import os
-from dataclasses import dataclass
+import unicodedata
 from typing import Any
+
+from pydantic import BaseModel
 
 import httpx
 
 from arenaflow.data.kb import Snippet
-from arenaflow.core.retriever import build_context
+from arenaflow.core.retriever import _WORD, build_context
 
 NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 DEFAULT_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
@@ -37,8 +39,7 @@ SYSTEM_OPS = (
 )
 
 
-@dataclass
-class Reply:
+class Reply(BaseModel):
     text: str
     source: str  # "nvidia" | "offline"
     model: str | None
@@ -98,24 +99,37 @@ async def _post_chat(
     return text.strip()
 
 
+async def _try_online(
+    api_key: str | None,
+    model: str,
+    system: str,
+    user: str,
+    used_ids: list[str],
+) -> Reply | None:
+    """Best-effort online call; None on any transport/shape failure (caller falls back)."""
+    if not api_key:
+        return None
+    try:
+        text = await _post_chat(api_key, model, system, user)
+    except (httpx.HTTPError, ValueError, KeyError, IndexError):
+        # transport error, non-JSON body, or unexpected shape -> fall back
+        return None
+    return Reply(text=text.strip(), source="nvidia", model=model, used_ids=used_ids)
+
+
 async def fan_reply(
     query: str,
     snippets: list[Snippet],
     api_key: str | None,
     model: str = DEFAULT_MODEL,
+    language: str = "en",
 ) -> Reply:
     used = [s.id for s in snippets]
     ctx = build_context(snippets)
-    user = f"REFERENCE NOTES:\n{ctx}\n\nFAN QUESTION:\n{query}"
-    if api_key:
-        try:
-            text = await _post_chat(api_key, model, SYSTEM_FAN, user)
-            if not text or not text.strip():
-                raise ValueError("empty completion from model")
-            return Reply(text=text.strip(), source="nvidia", model=model, used_ids=used)
-        except (httpx.HTTPError, ValueError, KeyError, IndexError):
-            # transport error, non-JSON body, or unexpected shape -> fall back
-            pass
+    user = f"USER LANGUAGE: {language}\n\nREFERENCE NOTES:\n{ctx}\n\nFAN QUESTION:\n{query}"
+    online = await _try_online(api_key, model, SYSTEM_FAN, user, used)
+    if online is not None:
+        return online
     return Reply(
         text=_format_offline_fan(query, snippets),
         source="offline",
@@ -138,16 +152,10 @@ async def ops_reply(
         f"REFERENCE NOTES:\n{ctx}\n\n"
         f"STAFF QUESTION:\n{question}"
     )
-    if api_key:
-        try:
-            text = await _post_chat(api_key, model, SYSTEM_OPS, user)
-            if not text or not text.strip():
-                raise ValueError("empty completion from model")
-            return Reply(text=text.strip(), source="nvidia", model=model, used_ids=used)
-        except (httpx.HTTPError, ValueError, KeyError, IndexError):
-            # transport error, non-JSON body, or unexpected shape -> fall back
-            pass
-    summary = ctx.split("\n\n")[0][:300] if ctx else "no reference notes matched"
+    online = await _try_online(api_key, model, SYSTEM_OPS, user, used)
+    if online is not None:
+        return online
+    summary = snippets[0].title if snippets else "no reference notes matched"
     return Reply(
         text=_format_offline_ops(summary, snapshot_json),
         source="offline",
@@ -156,17 +164,37 @@ async def ops_reply(
     )
 
 
-def detect_language(query: str) -> str:
-    """Cheap script-based language hint. The LLM does the real translation.
+def _unaccent(text: str) -> str:
+    """Strip diacritics so accented and unaccented queries match (cómo==como)."""
+    return "".join(c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c))
 
-    Latin-script detection is too ambiguous to do reliably without a model,
-    so for Latin we default to English. Non-Latin scripts map to one
-    language each - high confidence, low cost.
+
+_LATIN_HINTS = {
+    "es": {"cómo", "llego", "estadio", "transporte", "dónde", "gracias", "hola", "público"},
+    "fr": {"comment", "stade", "transports", "où", "bonjour", "merci", "je"},
+    "de": {"wie", "stadion", "öffentlich", "wo", "hallo", "danke", "ich"},
+    "pt": {"como", "estádio", "transporte", "onde", "obrigado", "olá"},
+    "it": {"come", "stadio", "trasporto", "dove", "grazie", "ciao"},
+}
+# Fold diacritics in the hints so accented/unaccented queries both match.
+_LATIN_HINTS = {lang: {_unaccent(h) for h in hints} for lang, hints in _LATIN_HINTS.items()}
+# ponytail: heuristic wordlist; wrong for short/ambiguous queries. Swap for a
+# tiny langid model only if detection drives more than the language pill.
+
+
+def detect_language(query: str) -> str:
+    """Cheap script + wordlist hint. The LLM does the real translation.
+
+    Non-Latin scripts map to one language each (high confidence). For Latin
+    script we fall back to a small per-language wordlist before defaulting to
+    English, so the detected-language pill is correct for common fan queries.
     """
-    q = query.strip()
-    if not q:
+    # Script detection runs on the raw string: NFKD would decompose Hangul
+    # syllables into Jamo and drop them out of the codepoint ranges below.
+    raw = query.strip()
+    if not raw:
         return "en"
-    for ch in q:
+    for ch in raw:
         cp = ord(ch)
         if 0x3040 <= cp <= 0x30FF:  # hiragana / katakana
             return "ja"
@@ -176,4 +204,14 @@ def detect_language(query: str) -> str:
             return "ar"
         if 0x0400 <= cp <= 0x04FF:  # cyrillic
             return "ru"
-    return "en"
+    # Fold diacritics so accented/unaccented queries match (cómo == como), then
+    # pick the language with the most hint-word hits. A single shared token
+    # (e.g. English "come" vs Italian "come") is too weak, so we stay English
+    # unless a language reaches >=2 hits; max-count breaks ES/PT ties.
+    words = set(_WORD.findall(_unaccent(raw.lower())))
+    best, best_n = "en", 1
+    for lang, hints in _LATIN_HINTS.items():
+        n = len(words & hints)
+        if n > best_n:
+            best, best_n = lang, n
+    return best

@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+from dataclasses import asdict
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from arenaflow.api.schemas import FanAsk, FanAnswer, OpsAsk, OpsAnswer
@@ -44,14 +45,8 @@ async def fan_ask(body: FanAsk, request: Request) -> FanAnswer:
     retriever = _retriever(request)
     snippets = retriever.search(body.query, top_k=3, city=body.city)
     lang = detect_language(body.query)
-    reply = await fan_reply(body.query, snippets, settings.nvidia_api_key, settings.nvidia_model)
-    return FanAnswer(
-        text=reply.text,
-        language=lang,
-        source=reply.source,
-        model=reply.model,
-        used_ids=reply.used_ids,
-    )
+    reply = await fan_reply(body.query, snippets, settings.nvidia_api_key, settings.nvidia_model, lang)
+    return FanAnswer(**reply.model_dump(), language=lang)
 
 
 @router.post("/api/ops/ask", response_model=OpsAnswer)
@@ -63,7 +58,7 @@ async def ops_ask(body: OpsAsk, request: Request) -> OpsAnswer:
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     snippets = retriever.search(body.question, top_k=2, city=snap.city)
-    snap_dict = snap.to_dict()
+    snap_dict = asdict(snap)
     reply = await ops_reply(
         body.question,
         snippets,
@@ -71,18 +66,12 @@ async def ops_ask(body: OpsAsk, request: Request) -> OpsAnswer:
         settings.nvidia_api_key,
         settings.nvidia_model,
     )
-    return OpsAnswer(
-        text=reply.text,
-        source=reply.source,
-        model=reply.model,
-        used_ids=reply.used_ids,
-        snapshot=snap_dict,
-    )
+    return OpsAnswer(**reply.model_dump(), snapshot=snap_dict)
 
 
 @router.get("/api/ops/snapshot")
 async def ops_snapshot(venue: str, minute: int = Query(60, ge=0, le=240)) -> dict:
     try:
-        return snapshot(venue, minute).to_dict()
+        return asdict(snapshot(venue, minute))
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))

@@ -21,7 +21,6 @@ class GateStatus:
 class Snapshot:
     venue: str
     city: str
-    kickoff_utc: str
     gates: list[GateStatus]
     inside: int
     capacity: int
@@ -31,10 +30,6 @@ class Snapshot:
     sustainability: dict[str, str]
     alerts: list[str]
     generated_at: str
-
-    def to_dict(self) -> dict:
-        d = asdict(self)
-        return d
 
 
 VENUES = [
@@ -129,8 +124,7 @@ def snapshot(venue: str, minute: int = 60) -> Snapshot:
     return Snapshot(
         venue=name,
         city=city,
-        kickoff_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        gates=gates,  # kept as GateStatus; to_dict serialises them
+        gates=gates,  # GateStatus nested; asdict serialises them
         inside=inside,
         capacity=capacity,
         transit_load=TRANSIT.get(name, {}),

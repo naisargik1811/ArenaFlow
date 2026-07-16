@@ -1,6 +1,18 @@
 from __future__ import annotations
 from pydantic import BaseModel, Field, field_validator
 
+from arenaflow.core.llm import Reply
+
+
+def _strip_nonempty(v: str, what: str) -> str:
+    # Strip first, then enforce non-empty: pydantic checks min_length=1 on the
+    # raw value before the validator runs, so a whitespace-only string slips past
+    # min_length unless we strip and re-check here.
+    v = v.strip()
+    if not v:
+        raise ValueError(f"{what} must contain non-whitespace characters")
+    return v
+
 
 class FanAsk(BaseModel):
     query: str = Field(..., min_length=1, max_length=800)
@@ -9,20 +21,11 @@ class FanAsk(BaseModel):
     @field_validator("query")
     @classmethod
     def _strip(cls, v: str) -> str:
-        # Reject whitespace-only up front: strip first, then enforce non-empty,
-        # because pydantic checks min_length=1 on the raw value before this runs.
-        v = v.strip()
-        if not v:
-            raise ValueError("query must contain non-whitespace characters")
-        return v
+        return _strip_nonempty(v, "query")
 
 
-class FanAnswer(BaseModel):
-    text: str
+class FanAnswer(Reply):
     language: str
-    source: str
-    model: str | None
-    used_ids: list[str]
 
 
 class OpsAsk(BaseModel):
@@ -33,17 +36,8 @@ class OpsAsk(BaseModel):
     @field_validator("question")
     @classmethod
     def _strip_q(cls, v: str) -> str:
-        # Mirror FanAsk: strip first, then enforce non-empty, because
-        # pydantic checks min_length=1 on the raw value before this runs.
-        v = v.strip()
-        if not v:
-            raise ValueError("question must contain non-whitespace characters")
-        return v
+        return _strip_nonempty(v, "question")
 
 
-class OpsAnswer(BaseModel):
-    text: str
-    source: str
-    model: str | None
-    used_ids: list[str]
+class OpsAnswer(Reply):
     snapshot: dict

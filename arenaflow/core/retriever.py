@@ -11,7 +11,7 @@ from collections import Counter
 
 from arenaflow.data.kb import Snippet, all_snippets
 
-_WORD = re.compile(r"[A-Za-z][A-Za-z']+")
+_WORD = re.compile(r"[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ']+")  # keep accented Latin letters
 
 
 def _tokens(s: str) -> list[str]:
@@ -34,6 +34,11 @@ class Retriever:
             for term in tf:
                 self._df[term] += 1
         self._n = len(self._snippets)
+        # Precompute TF-IDF vectors + norms once; search() reuses them
+        # instead of recomputing per query (ponytail: right for KB size;
+        # rebuild the Retriever if the KB changes).
+        self._vecs = [self._tfidf(tf) for tf in self._tfs]
+        self._norms = [self._vec_norm(v) for v in self._vecs]
 
     def _tfidf(self, tf: Counter[str]) -> dict[str, float]:
         out: dict[str, float] = {}
@@ -54,18 +59,26 @@ class Retriever:
         q_norm = self._vec_norm(q_vec)
 
         scored: list[tuple[float, Snippet]] = []
+        city_snips: list[Snippet] = []
         for i, snip in enumerate(self._snippets):
             if city:
                 if not snip.city or snip.city.lower() != city.lower():
                     continue
-            v = self._tfidf(self._tfs[i])
-            n = self._vec_norm(v)
+                city_snips.append(snip)
+            v = self._vecs[i]
+            n = self._norms[i]
             dot = sum(q_vec.get(t, 0.0) * v.get(t, 0.0) for t in q_vec)
             score = dot / (q_norm * n)
             if score > 0:
                 scored.append((score, snip))
         scored.sort(key=lambda x: x[0], reverse=True)
-        return [s for _, s in scored[:top_k]]
+        if scored:
+            return [s for _, s in scored[:top_k]]
+        # No token overlap (e.g. non-English query) but a city was selected:
+        # return that city's venue snippet(s) so the answer stays grounded.
+        if city_snips:
+            return city_snips[:top_k]
+        return []
 
 
 def build_context(snippets: list[Snippet]) -> str:
